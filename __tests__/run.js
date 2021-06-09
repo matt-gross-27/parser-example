@@ -17,6 +17,8 @@ const tests = [
   require('./variable-test.js'),
   require('./if-test.js'),
   require('./relational-test.js'),
+  require('./equality-test.js'),
+  require('./logical-test.js'),
 ];
 
 const parser = new Parser();
@@ -26,7 +28,7 @@ const parser = new Parser();
  */
 function exec() {
   const program = `
-    x <= 6 + y;
+    1 + 2;
   `;
 
   const ast = parser.parse(program);

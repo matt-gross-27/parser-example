@@ -23,7 +23,9 @@ const parser = new Parser();
  */
 function exec() {
   const program = `
-    (2/2);
+    {
+      x = 3 + 8;
+    }
   `;
 
   const ast = parser.parse(program);

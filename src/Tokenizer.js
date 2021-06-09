@@ -5,25 +5,30 @@ const Spec = [
   // -----------------------------------------------
   // Whitespace:
   [/^\s+/, null],
-  
+
   // -----------------------------------------------
   // Symbols, delimiters:
   [/^;/, ';'],
-  
+  [/^{/, '{'],
+  [/^}/, '}'],
+
+  // -----------------------------------------------
+  // Math operators: +, -
+  [/^[+\-]/, 'ADDITIVE_OPERATOR'],
+
   // -----------------------------------------------
   // Numbers:
   [/^\d+/, 'NUMBER'],
 
   // -----------------------------------------------
   // Strings:
-  [/^"[^"]*"/, 'STRING' ],
-  [/^'[^']*'/, 'STRING' ],
-
+  [/^"[^"]*"/, 'STRING'],
+  [/^'[^']*'/, 'STRING'],
 
   // -----------------------------------------------
   // Variables:
   // [/^{{[^{}\[\]<>]*}}/, 'VARIABLE' ]
-]
+];
 
 /**
  * Tokenizer class.
@@ -80,7 +85,7 @@ class Tokenizer {
       return {
         type: tokenType,
         value: tokenValue,
-      }
+      };
     }
 
     throw new SyntaxError(`Unexpected token: "${string[0]}"`);
@@ -92,7 +97,7 @@ class Tokenizer {
   _match(regexp, string) {
     const matched = regexp.exec(string);
     if (matched === null) {
-      return null
+      return null;
     }
     this._cursor += matched[0].length;
     return matched[0];

@@ -8,7 +8,10 @@ const assert = require('assert');
 /**
  * List of tests.
  */
-const tests = [require('./literals-test.js')];
+const tests = [
+  require('./literals-test.js'),
+  require('./statement-list-test.js'),
+];
 
 const parser = new Parser()
 
@@ -19,7 +22,6 @@ function exec() {
   const program = `
   "This is working"; 
   456;
-  
   `;
 
   const ast = parser.parse(program)

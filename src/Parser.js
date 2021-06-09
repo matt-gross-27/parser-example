@@ -36,7 +36,7 @@ class Parser {
    * Main entry point.
    * 
    * Program
-   *  : Literal
+   *  : StatementList
    *  ;
    */
   Program() {
@@ -76,7 +76,7 @@ class Parser {
    */
   ExpressionStatement() {
     const expression = this.Expression();
-    this._eat(';'); 
+    this._eat(';');
     return {
       type: 'ExpressionStatement',
       expression,

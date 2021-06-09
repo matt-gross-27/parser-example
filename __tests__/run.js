@@ -13,7 +13,8 @@ const tests = [
   require('./statement-list-test'),
   require('./block-test'),
   require('./empty-statement-test'),
-  require('./math-test')
+  require('./math-test'),
+  require('./variable-test.js'),
 ];
 
 const parser = new Parser();

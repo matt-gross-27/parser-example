@@ -23,7 +23,7 @@ const parser = new Parser();
  */
 function exec() {
   const program = `
-    "some markDown";
+    (2/2);
   `;
 
   const ast = parser.parse(program);
@@ -32,7 +32,7 @@ function exec() {
 }
 
 // Run manual test.
-// exec();
+exec();
 
 /**
  * Test function.

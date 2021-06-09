@@ -54,7 +54,7 @@ class Parser {
   StatementList(stopLookahead = null) {
     const statementList = [this.Statement()];
 
-    while (this._lookahead !== null && this._lookahead.type !== stopLookahead) {
+    while (this._lookahead != null && this._lookahead.type !== stopLookahead) {
       statementList.push(this.Statement());
     }
 
@@ -99,7 +99,7 @@ class Parser {
     const consequent = this.Statement();
 
     const alternate =
-      this._lookahead !== null && this._lookahead.type === 'else'
+      this._lookahead != null && this._lookahead.type === 'else'
         ? this._eat('else') && this.Statement()
         : null;
 
@@ -270,45 +270,6 @@ class Parser {
   }
 
   /**
-   * LeftHandSideExpression
-   *  : Identifier
-   *  ;
-   */
-  LeftHandSideExpression() {
-    return this.Identifier();
-  }
-
-  /**
-   * Identifier
-   *  : IDENTIFIER
-   *  ;
-   */
-  Identifier() {
-    const name = this._eat('IDENTIFIER').value;
-    return {
-      type: 'Identifier',
-      name,
-    };
-  }
-
-  /**
-   * Check whether it's valid assignment target.
-   */
-  _checkValidAssignmentTarget(node) {
-    if (node.type === 'Identifier') {
-      return node;
-    }
-    throw new SyntaxError('Invalid left-hand side in assignment expression');
-  }
-
-  /**
-   * Whether the token is an assignment operator.
-   */
-  _isAssignmentOperator(tokenType) {
-    return tokenType === 'SIMPLE_ASSIGN' || tokenType === 'COMPLEX_ASSIGN';
-  }
-
-  /**
    * AssignmentOperator
    *  : SIMPLE_ASSIGN
    *  | COMPLEX_ASSIGN
@@ -358,118 +319,83 @@ class Parser {
    *  ;
    */
   AdditiveExpression() {
-    return this._BinaryExpression(
-      'MultiplicativeExpression',
-      'ADDITIVE_OPERATOR'
-    );
+    return this._BinaryExpression('MultiplicativeExpression', 'ADDITIVE_OPERATOR');
   };
 
   /**
    * MultiplicativeExpression
-   *  : PrimaryExpression
-   *  | MultiplicativeExpression MULTIPLICATIVE_OPERATOR PrimaryExpression -> PrimaryExpression MULTIPLICATIVE_OPERATOR PrimaryExpression
+   *  : UnaryExpression
+   *  | MultiplicativeExpression MULTIPLICATIVE_OPERATOR UnaryExpression
    *  ;
    */
   MultiplicativeExpression() {
-    return this._BinaryExpression(
-      'PrimaryExpression',
-      'MULTIPLICATIVE_OPERATOR'
-    );
+    return this._BinaryExpression('UnaryExpression', 'MULTIPLICATIVE_OPERATOR');
   };
 
-  /**
-   * Generic binary expression.
+  /** 
+   * UnaryExpression
+   *  : LeftHandSideExpression
+   *  | ADDITIVE_OPERATOR UnaryExpression
+   *  | LOGICAL_NOT UnaryExpression
+   *  ;
    */
-  _BinaryExpression(builderName, operatorToken) {
-    let left = this[builderName]();
-
-    while (this._lookahead.type === operatorToken) {
-      const operator = this._eat(operatorToken).value;
-
-      const right = this[builderName]();
-
-      left = {
-        type: 'BinaryExpression',
+  UnaryExpression() {
+    let operator;
+    switch (this._lookahead.type) {
+      case 'ADDITIVE_OPERATOR':
+        operator = this._eat('ADDITIVE_OPERATOR').value;
+        break;
+      case 'LOGICAL_NOT':
+        operator = this._eat('LOGICAL_NOT').value;
+        break;
+    }
+    if (operator != null) {
+      return {
+        type: 'UnaryExpression',
         operator,
-        left,
-        right
+        argument: this.UnaryExpression(), // chained expressions: --x
       };
-    };
-
-    return left;
+    }
+    return this.LeftHandSideExpression();
   }
 
   /**
-   * Generic helper for LogicalExpression AST nodes
-   */
-   _LogicalExpression(builderName, operatorToken) {
-    let left = this[builderName]();
-
-    while (this._lookahead.type === operatorToken) {
-      const operator = this._eat(operatorToken).value;
-
-      const right = this[builderName]();
-
-      left = {
-        type: 'LogicalExpression',
-        operator,
-        left,
-        right
-      };
-    };
-
-    return left;
+  * LeftHandSideExpression
+  *  : PrimaryExpression
+  *  ;
+  */
+  LeftHandSideExpression() {
+    return this.PrimaryExpression();
   }
 
   /**
    * PrimaryExpression
    *  : Literal
    *  | ParenthesizedExpression
+   *  | Identifier
    *  ;
    */
   PrimaryExpression() {
     if (this._isLiteral(this._lookahead.type)) {
       return this.Literal();
     }
-
     switch (this._lookahead.type) {
-      case '(': return this.ParenthesizedExpression();
+      case '(':
+        return this.ParenthesizedExpression();
+      case 'IDENTIFIER':
+        return this.Identifier();
       default: return this.LeftHandSideExpression();
     }
   }
 
   /**
-   * Whether token is a literal.
-   */
-  _isLiteral(tokenType) {
-    return tokenType === 'NUMBER' ||
-      tokenType === 'STRING' ||
-      tokenType === 'true' ||
-      tokenType === 'false' ||
-      tokenType === 'null';
-  }
-
-  /**
-   * ParenthesizedExpression
-   *  : '(' Expression ')'
-   *  ;
-   */
-  ParenthesizedExpression() {
-    this._eat('(');
-    const expression = this.Expression();
-    this._eat(')');
-    return expression;
-  }
-
-
-  /**
-   * Literal
-   *  : NumericLiteral
-   *  | StringLiteral
-   *  | BooleanLiteral
-   *  | NullLiteral
-   *  ;
-   */
+ * Literal
+ *  : NumericLiteral
+ *  | StringLiteral
+ *  | BooleanLiteral
+ *  | NullLiteral
+ *  ;
+ */
   Literal() {
     switch (this._lookahead.type) {
       case 'NUMBER':
@@ -537,6 +463,104 @@ class Parser {
       type: 'NumericLiteral',
       value: Number(token.value),
     };
+  }
+
+  /**
+ * ParenthesizedExpression
+ *  : '(' Expression ')'
+ *  ;
+ */
+  ParenthesizedExpression() {
+    this._eat('(');
+    const expression = this.Expression();
+    this._eat(')');
+    return expression;
+  }
+
+  /**
+ * Identifier
+ *  : IDENTIFIER
+ *  ;
+ */
+  Identifier() {
+    const name = this._eat('IDENTIFIER').value;
+    return {
+      type: 'Identifier',
+      name,
+    };
+  }
+
+
+  /**
+ * Generic binary expression.
+ */
+  _BinaryExpression(builderName, operatorToken) {
+    let left = this[builderName]();
+
+    while (this._lookahead.type === operatorToken) {
+      const operator = this._eat(operatorToken).value;
+
+      const right = this[builderName]();
+
+      left = {
+        type: 'BinaryExpression',
+        operator,
+        left,
+        right
+      };
+    };
+
+    return left;
+  }
+
+  /**
+   * Generic helper for LogicalExpression AST nodes
+   */
+  _LogicalExpression(builderName, operatorToken) {
+    let left = this[builderName]();
+
+    while (this._lookahead.type === operatorToken) {
+      const operator = this._eat(operatorToken).value;
+
+      const right = this[builderName]();
+
+      left = {
+        type: 'LogicalExpression',
+        operator,
+        left,
+        right
+      };
+    };
+
+    return left;
+  }
+
+  /**
+   * Whether token is a literal.
+   */
+  _isLiteral(tokenType) {
+    return tokenType === 'NUMBER' ||
+      tokenType === 'STRING' ||
+      tokenType === 'true' ||
+      tokenType === 'false' ||
+      tokenType === 'null';
+  }
+
+  /**
+  * Check whether it's valid assignment target.
+  */
+  _checkValidAssignmentTarget(node) {
+    if (node.type === 'Identifier') {
+      return node;
+    }
+    throw new SyntaxError('Invalid left-hand side in assignment expression');
+  }
+
+  /**
+   * Whether the token is an assignment operator.
+   */
+  _isAssignmentOperator(tokenType) {
+    return tokenType === 'SIMPLE_ASSIGN' || tokenType === 'COMPLEX_ASSIGN';
   }
 
   /**
